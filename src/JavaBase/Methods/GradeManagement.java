@@ -5,13 +5,37 @@ import java.util.Scanner;
 public class GradeManagement {
     //Method that add grades in the array
     static int[] addGrade(){
-        final int MAX_DIMENSION = 7;
+        /*final int MAX_DIMENSION = 7;
         System.out.println("Enter max " + MAX_DIMENSION + " grades");
         Scanner in = new Scanner(System.in);
 
         int grades[] = new int [MAX_DIMENSION];
         for(int i = 0; i < MAX_DIMENSION; i++){
             grades[i] = in.nextInt();
+        }
+
+        return grades;*/
+
+        Scanner in = new Scanner(System.in);
+        IO.println("How many grades do you want insert?");
+        int dimension = in.nextInt();
+
+      while(dimension < 1){
+          IO.println("ERROR...The value must be > 0");
+          dimension = in.nextInt();
+      }
+
+        int grades[] = new int[dimension];
+        IO.println("Enter " + dimension + " grades");
+        for(int i = 0; i < dimension; i++){
+           int grade = in.nextInt();
+
+           while(grade < 0 || grade > 30){
+               System.out.println("Invalid grade. Enter a value from 0 to 30");
+               grade = in.nextInt();
+           }
+
+           grades[i] = grade;
         }
 
         return grades;
@@ -88,15 +112,8 @@ public class GradeManagement {
     }
 
     //Method that verify if tha average is at least 18
-    static boolean atLeastEighteen(int [] grades){
-
-        double average = averageGrade(grades);
-
-        if(average >= 18){
-            return true;
-        }
-
-        return false;
+    static boolean atLeastEighteen(int[] grades) {
+        return averageGrade(grades) >= 18;
     }
 
 
@@ -125,8 +142,8 @@ public class GradeManagement {
         //PRINT THE AVERAGE
         System.out.println(" ");
         System.out.println("AVERAGE GRADE");
-        double avarage = averageGrade(grades);
-        System.out.println(avarage);
+        double average = averageGrade(grades);
+        System.out.println(average);
 
         //PRINT HOW MANY GRADE ARE SUFFICIENT
         System.out.println(" ");
