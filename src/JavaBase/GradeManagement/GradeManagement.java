@@ -1,21 +1,10 @@
-package JavaBase.Methods;
+package JavaBase.GradeManagement;
 
 import java.util.Scanner;
 
 public class GradeManagement {
     //Method that add grades in the array
     static int[] addGrade(){
-        /*final int MAX_DIMENSION = 7;
-        System.out.println("Enter max " + MAX_DIMENSION + " grades");
-        Scanner in = new Scanner(System.in);
-
-        int grades[] = new int [MAX_DIMENSION];
-        for(int i = 0; i < MAX_DIMENSION; i++){
-            grades[i] = in.nextInt();
-        }
-
-        return grades;*/
-
         Scanner in = new Scanner(System.in);
         IO.println("How many grades do you want insert?");
         int dimension = in.nextInt();
