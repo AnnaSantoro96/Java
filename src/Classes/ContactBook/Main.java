@@ -45,13 +45,14 @@ public class Main {
                     System.out.println("ADD A NEW CONTACT");
                     System.out.println("Enter the contact name");
                     String name = in.nextLine();
+
                     System.out.println("Enter the contact phone number");
                     String phoneNumber = in.nextLine();
                     System.out.println("Enter the contact email:");
                     String email = in.nextLine();
-                    while ((name == null || name.isBlank())
-                            || (phoneNumber == null || phoneNumber.isBlank())
-                            || (email == null || email.isBlank())) {
+                    while (name.isBlank()
+                            || phoneNumber.isBlank()
+                            ||email.isBlank()) {
 
                         System.out.println("Invalid input");
 
@@ -78,6 +79,8 @@ public class Main {
                     System.out.println("Enter the contact name");
                     String n = in.nextLine();
                     Contact contact = contactBook.searchContactByName(n);
+
+
 
                     if(contact == null){
                         System.out.println("Contact is not present.");

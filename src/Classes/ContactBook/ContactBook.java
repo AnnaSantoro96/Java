@@ -19,12 +19,16 @@ public class ContactBook {
     }
 
     public void printContact(){
+
+        if (contacts.isEmpty()) {
+            System.out.println("No contacts are present...");
+            return;
+        }
+
         for(Contact contact : contacts) {
-            if (contacts.isEmpty()) {
-                System.out.println("No contacts are present...");
-            } else {
+
                 contact.printInfo();
-            }
+
         }
     }
 

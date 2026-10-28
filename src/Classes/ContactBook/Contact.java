@@ -17,11 +17,11 @@ public class Contact {
     }
 
     public void setName(String name) {
-        if(name == null || name.isBlank()){
-            System.out.println("ERROR...empty value");
-        }else{
-            this.name = name;
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Invalid name");
         }
+
+        this.name = name;
     }
 
     public String getEmail() {
@@ -30,7 +30,7 @@ public class Contact {
 
     public void setEmail(String email) {
         if(email == null || email.isBlank()){
-            System.out.println("ERROR...empty value");
+            throw new IllegalArgumentException("Invalid email");
         }else{
             this.email = email;
         }
@@ -42,7 +42,7 @@ public class Contact {
 
     public void setPhoneNumber(String phoneNumber) {
         if(phoneNumber == null || phoneNumber.isBlank()){
-            System.out.println("ERROR...empty value");
+            throw new IllegalArgumentException("Inavlid phone number");
         }else{
             this.phoneNumber = phoneNumber;
         }
