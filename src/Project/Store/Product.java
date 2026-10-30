@@ -1,4 +1,4 @@
-package Classes.Store;
+package Project.Store;
 
 public class Product {
 

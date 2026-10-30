@@ -1,4 +1,4 @@
-package Classes.Library;
+package Project.Library;
 import java.util.Scanner;
 
 public class Main {

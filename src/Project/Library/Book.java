@@ -1,4 +1,4 @@
-package Classes.Library;
+package Project.Library;
 
 public class Book {
     private String title;

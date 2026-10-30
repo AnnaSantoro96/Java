@@ -1,4 +1,4 @@
-package Classes.ContactBook;
+package Project.ContactBook;
 
 import java.util.ArrayList;
 

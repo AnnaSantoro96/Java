@@ -1,4 +1,4 @@
-package Classes.Store;
+package Project.Store;
 
 import java.util.ArrayList;
 import java.util.Scanner;

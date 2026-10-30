@@ -1,4 +1,4 @@
-package Classes.ContactBook;
+package Project.ContactBook;
 
 public class Contact {
 
