@@ -11,6 +11,11 @@ public class Main {
 
         for(Walkable walkable : walkables){
             walkable.walk();
+            walkable.stop();
         }
+
+        IO.println();
+        Walkable.showInfo();
+
     }
 }
