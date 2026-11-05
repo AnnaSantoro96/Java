@@ -1,8 +1,59 @@
 package Project.LibraryManagementSystem;
 
 import java.util.Scanner;
-
 public class Main {
+    private static String readNonBlankString(Scanner in, String message, String errorMessage){
+        System.out.println(message);
+        String value = in.nextLine();
+
+        while(value.isBlank()){
+            IO.println(errorMessage);
+            IO.println(message);
+            value = in.nextLine();
+        }
+
+        return value.trim();
+    }
+
+    private static boolean readBoolean(Scanner in, String message, String errorMessage){
+        while (true){
+            IO.println(message);
+
+            if(!in.hasNextBoolean()){
+                IO.println(errorMessage);
+                in.nextLine();
+                continue;
+            }
+            boolean available = in.nextBoolean();
+            in.nextLine();
+
+            return available;
+        }
+
+    }
+
+    private static int readInt(Scanner in, String message, String errorMessage, int min, int max) {
+        while (true) {
+            System.out.println(message);
+
+            if (!in.hasNextInt()) {
+                System.out.println(errorMessage);
+                in.nextLine();
+                continue;
+            }
+
+            int value = in.nextInt();
+            in.nextLine();
+
+            if (value < min || value > max) {
+                System.out.println(errorMessage);
+                continue;
+            }
+
+            return value;
+        }
+    }
+
     static void main(String[] args) {
         Scanner in = new Scanner(System.in);
         Library library = new Library();
@@ -22,75 +73,22 @@ public class Main {
             System.out.println("10.Print overdue loans");
             System.out.println("11.Print loans due soon");
             System.out.println("0. Exit");
-            System.out.println("Choose an option:");
 
-            if(!in.hasNextInt()){
-                System.out.println("Incorrect input...");
-                in.nextLine();
-                continue;
-            }
-
-            value = in.nextInt();
-            in.nextLine();
+             value = readInt(in, "Choose an option", "Invalid value",0, 11);
 
             if(value == 0){
                 IO.println("BYE BYE...");
                 break;
             }
 
-            if(value < 0 || value > 11){
-                IO.println("Incorrect value");
-                continue;
-            }
-
             switch (value){
                 case 1:
                     IO.println("ADD A NEW BOOK");
-                    IO.println("Enter the ISBN");
-                    String isbn = in.nextLine();
-
-                    while(isbn.isBlank()){
-                        IO.println("Invalid ISBN");
-                        IO.println("Enter the ISBN");
-                        isbn = in.nextLine();
-                    }
-
-                    IO.println("Enter the title");
-                    String title = in.nextLine();
-
-                    while(title.isBlank()){
-                        IO.println("Invalid title");
-                        IO.println("Enter the title");
-                        title = in.nextLine();
-                    }
-
-                    IO.println("Enter the author");
-                    String author = in.nextLine();
-
-                    while (author.isBlank()){
-                        IO.println("Invalid author");
-                        IO.println("Enter the author");
-                        author = in.nextLine();
-                    }
-
-                    IO.println("Enter the category");
-                    String category = in.nextLine();
-
-                    while (category.isBlank()){
-                        IO.println("Invalid category");
-                        IO.println("Enter the category");
-                        category = in.nextLine();
-                    }
-
-                    IO.println("Is the book available? (true or false)");
-
-                    while (!in.hasNextBoolean()){
-                        IO.println("Invalid input");
-                        in.nextLine();
-                    }
-
-                    boolean available = in.nextBoolean();
-                    in.nextLine();
+                    String isbn = readNonBlankString(in, "Enter the ISBN", "Invalid ISBN");
+                    String title = readNonBlankString(in, "Enter the title", "Invalid title");
+                    String author = readNonBlankString(in, "Enter the author", "Invalid author");
+                    String category = readNonBlankString(in, "Enter the category", "Invalid category");
+                    boolean available = readBoolean(in, "Is the book available? (true or false)", "Invalid input");
 
                     try {
                         library.addBook(new Book(isbn, title, author, category, available));
@@ -102,32 +100,9 @@ public class Main {
 
                 case 2:
                     IO.println("ADD A MEMBER");
-                    IO.println("Enter the id");
-                    String id = in.nextLine();
-
-                    while (id.isBlank()){
-                        IO.println("Invalid id");
-                        IO.println("Enter the id");
-                        id = in.nextLine();
-                    }
-
-                    IO.println("Enter the name");
-                    String name = in.nextLine();
-
-                    while (name.isBlank()){
-                        IO.println("Invalid name");
-                        IO.println("Enter the name");
-                        name = in.nextLine();
-                    }
-
-                    IO.println("Enter the last name");
-                    String lastName = in.nextLine();
-
-                    while (lastName.isBlank()){
-                        IO.println("Invalid last name");
-                        IO.println("Enter the last name");
-                        lastName = in.nextLine();
-                    }
+                    String id = readNonBlankString(in, "Enter the ID", "Invalid ID");
+                    String name = readNonBlankString(in, "Enter the name", "Invalid name");
+                    String lastName = readNonBlankString(in, "Enter the last name", "Invalid last name");
 
                     try {
                         library.addMember(new Member(id, name, lastName));
@@ -143,14 +118,7 @@ public class Main {
                     break;
 
                 case 4:
-                    IO.println("Enter the ISBN of the book you want to search for");
-                    String isbn1 = in.nextLine();
-
-                    while (isbn1.isBlank()){
-                        IO.println("Invalid ISBN");
-                        IO.println("Enter the ISBN");
-                        isbn1 = in.nextLine();
-                    }
+                    String isbn1 = readNonBlankString(in, "Enter the ISBN of the book you want to search for", "Invalid ISBN");
 
                     try {
                         Book book = library.findBookByIsbn(isbn1);
@@ -165,14 +133,7 @@ public class Main {
                     break;
 
                 case 5:
-                    IO.println("Enter the ISBN of the book you want remove");
-                    String isbn2 = in.nextLine();
-
-                    while (isbn2.isBlank()){
-                        IO.println("Invalid ISBN");
-                        IO.println("Enter the ISBN");
-                        isbn2 = in.nextLine();
-                    }
+                    String isbn2 = readNonBlankString(in, "Enter the ISBN of the book you want remove", "Invalid ISBN");
 
                     try {
                         library.removeBook(isbn2);
@@ -183,23 +144,8 @@ public class Main {
                     break;
 
                 case 6:
-                IO.println("Enter the ISBN of the book you want borrow");
-                String isbn3 = in.nextLine();
-
-                    while (isbn3.isBlank()){
-                        IO.println("Invalid ISBN");
-                        IO.println("Enter the ISBN");
-                        isbn3 = in.nextLine();
-                    }
-
-                IO.println("Enter the ID of the member");
-                String memberId = in.nextLine();
-
-                while(memberId.isBlank()){
-                    IO.println("Invalid member id");
-                    IO.println("Enter the ID of the member");
-                    memberId = in.nextLine();
-                }
+                String isbn3 = readNonBlankString(in, "Enter the ISBN of the book you want borrow", "Invalid ISBN");
+                String memberId = readNonBlankString(in, "Enter the ID of the member", "Invalid ID");
 
                 try {
                     library.borrowBook(isbn3, memberId);
@@ -210,14 +156,7 @@ public class Main {
                 break;
 
                 case 7:
-                    IO.println("Enter the ISBN of the book you want return");
-                    String isbn4 = in.nextLine();
-
-                    while (isbn4.isBlank()){
-                        IO.println("Invalid ISBN");
-                        IO.println("Enter the ISBN");
-                        isbn4 = in.nextLine();
-                    }
+                    String isbn4 = readNonBlankString(in, "Enter the ISBN of the book you want return", "Invalid ISBN");
 
                     try {
                         library.returnBook(isbn4);
@@ -233,14 +172,7 @@ public class Main {
                 break;
 
                 case 9:
-                    IO.println("Enter the member ID");
-                    String memberId2 = in.nextLine();
-
-                    while (memberId2.isBlank()){
-                        IO.println("Invalid member id");
-                        IO.println("Enter member ID");
-                        memberId2 = in.nextLine();
-                    }
+                    String memberId2 = readNonBlankString(in, "Enter the member ID", "Invalid ID");
 
                     try {
                         library.printLoansByMember(memberId2);

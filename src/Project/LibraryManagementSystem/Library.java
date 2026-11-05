@@ -1,15 +1,14 @@
 package Project.LibraryManagementSystem;
-
-import JavaBase.Exercices.LeapYear;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Library {
-    private HashMap<String, Book> books;
-    private HashMap<String, Member> members;
-    private ArrayList<Loan> loans;
+    private Map<String, Book> books;
+    private Map<String, Member> members;
+    private List<Loan> loans;
 
     public Library(){
         books = new HashMap<>();
@@ -56,6 +55,10 @@ public class Library {
 
         if (!books.containsKey(isbn)) {
             throw new IllegalArgumentException("Book not found");
+        }
+
+        if (findActiveLoanByIsbn(isbn) != null) {
+            throw new IllegalArgumentException("The book is on loan.");
         }
 
         books.remove(isbn);
@@ -118,18 +121,18 @@ public class Library {
             throw new IllegalArgumentException("The book is not borrowed");
         }
 
-        for(Loan loan : loans){
-            if(loan.getBook().getIsbn().equals(isbn) && !loan.isReturned()){
-                loan.setReturned(true);
-                break;
-            }
+        Loan activeLoan = findActiveLoanByIsbn(isbn);
+        if(activeLoan == null){
+            throw new IllegalArgumentException("The book is on loan.");
         }
+        activeLoan.setReturned(true);
         book.setAvailable(true);
     }
 
+
     public void printAllLoans() {
         if (loans.isEmpty()) {
-            System.out.println("There are no active loans");
+            System.out.println("There are no loans");
             return;
         }
 
@@ -257,7 +260,7 @@ public class Library {
             }
         }
             if(hasActiveLoans){
-                throw new IllegalArgumentException("Acive Loans");
+                throw new IllegalArgumentException("Active loans");
             }
 
             members.remove(memberId);
