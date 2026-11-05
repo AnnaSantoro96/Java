@@ -311,4 +311,13 @@ public class Library {
         }
         return count;
     }
+
+    public void printLibraryStatistics(){
+        IO.println("Total books: " + books.size());
+        IO.println("Available books: " + countAvailableBooks());
+        IO.println("Loan books: " + (books.size() - countAvailableBooks()));
+        IO.println("Total members: " + members.size());
+        IO.println("Active loans: " + countActiveLoans());
+        IO.println("Overdue loans: " + countOverdueLoans());
+    }
 }
