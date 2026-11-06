@@ -1,7 +1,6 @@
 package Project.ShoppingCart;
 
-import java.util.Iterator;
-import java.util.LinkedHashMap;
+import java.util.*;
 
 public class ShoppingCart {
     private LinkedHashMap<String, Product> products;
@@ -99,5 +98,44 @@ public class ShoppingCart {
             }
         }
         return productsRemoved;
+    }
+
+    public void sortProducts(){
+        List<Product> sortedProducts = new ArrayList<>(products.values());
+        sortedProducts.sort(
+                Comparator.comparing(Product::getPrice)
+                        .thenComparing(
+                                Product::getName,
+                                Comparator.reverseOrder()
+                        )
+        );
+
+        for (Product product : sortedProducts){
+            IO.println(product);
+        }
+    }
+
+    public void printProductsSortedByPrice() {
+        List<Map.Entry<String, Product>> sortedEntries =
+                new ArrayList<>(products.entrySet());
+
+        sortedEntries.sort(
+                Comparator.comparing(entry -> entry.getValue().getPrice())
+        );
+
+        for (Map.Entry<String, Product> entry : sortedEntries) {
+            System.out.println(entry.getKey());
+            System.out.println(entry.getValue());
+        }
+    }
+
+    public void increasePrices(){
+        Iterator<Product> iterator = products.values().iterator();
+
+        while (iterator.hasNext()){
+            Product product = iterator.next();
+            product.setPrice(product.getPrice() * 1.10);
+
+        }
     }
 }

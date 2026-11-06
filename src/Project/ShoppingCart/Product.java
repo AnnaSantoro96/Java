@@ -1,6 +1,6 @@
 package Project.ShoppingCart;
 
-public class Product {
+public class Product implements Comparable<Product>{
     private String code;
     private String name;
     private double price;
@@ -47,5 +47,10 @@ public class Product {
     @Override
     public String toString() {
         return "Code: " + code + "\nName: " + name + "\nPrice: " + price;
+    }
+
+    @Override
+    public int compareTo(Product o) {
+        return Double.compare(this.price, o.price);
     }
 }
