@@ -1,6 +1,11 @@
 package Project.ShoppingCart;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class ShoppingCart {
     private LinkedHashMap<String, Product> products;
@@ -137,5 +142,96 @@ public class ShoppingCart {
             product.setPrice(product.getPrice() * 1.10);
 
         }
+    }
+
+    public void printAllProducts(){
+
+        if(products.isEmpty()){
+            System.out.println("The shopping cart is empty.");
+            return;
+        }
+
+        products.values().forEach(product -> {
+            System.out.println("Code: " + product.getCode());
+            System.out.println("Name: " + product.getName());
+            System.out.println("Price: " + product.getPrice());
+        });
+    }
+
+    public void applyDiscount(double percentage){
+        if (!Double.isFinite(percentage) || percentage < 0 || percentage > 100) {
+            throw new IllegalArgumentException("Invalid percentage");
+        }
+
+        products.values().forEach(product -> {
+            product.setPrice(product.getPrice()*(1-percentage/100));
+        });
+    }
+
+    public void printProductsAbovePrice(double minPrice){
+        if(!Double.isFinite(minPrice) || minPrice < 0){
+            throw new IllegalArgumentException("Invalid price");
+        }
+
+    AtomicBoolean found = new AtomicBoolean(false);
+    products.values().forEach(product -> {
+            if(product.getPrice() > minPrice){
+                found.set(true);
+                IO.println(product);
+            }
+        });
+
+    if(!found.get()){
+        IO.println("No product");
+    }
+    }
+
+    public void printProductsInPriceRange(double minPrice, double maxPrice){
+        if(!Double.isFinite(minPrice) || !Double.isFinite(maxPrice) || minPrice < 0 || minPrice > maxPrice || maxPrice <= 0){
+            throw new IllegalArgumentException("Invalid input");
+        }
+
+        Predicate<Product> condition =
+                product -> product.getPrice() >= minPrice;
+
+        Predicate<Product> condition2 =
+                product -> product.getPrice() <= maxPrice;
+
+        Predicate<Product> combined = condition.and(condition2);
+
+        products.values().forEach(product ->{
+            if(combined.test(product)){
+                System.out.println(product);
+            }
+        });
+    }
+
+    public void printPriceIncrease(){
+        Function<Product, Double> getProductPrice = product -> product.getPrice() * 1.10;
+
+        products.values().forEach(product -> {
+
+            Double priceIncrease = getProductPrice.apply(product);
+            IO.println(product.getName() + " - " + priceIncrease);
+                }
+
+                );
+    }
+
+    public void printCartStatus(){
+        Supplier<String> successMessage = () -> "The shopping cart contains products";
+        Supplier<String> failedMessage = () -> "The shopping cart is empty";
+
+        IO.println(products.isEmpty() ? failedMessage.get() : successMessage.get());
+    }
+
+    public void printProductNames(){
+        Function<Product, String> productName = Product::getName;
+
+        Consumer<String> print = System.out::println;
+
+        products.values().forEach(product ->
+                print.accept(productName.apply(product))
+        );
     }
 }
