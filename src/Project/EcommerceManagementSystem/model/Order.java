@@ -262,8 +262,8 @@ public class Order {
     }
 
     public boolean cancelOrder(){
-        if(status == OrderStatus.PENDING){
-            this.status = OrderStatus.CANCELLED;
+        if(status == OrderStatus.PENDING || status == OrderStatus.CONFIRMED){
+            status = OrderStatus.CANCELLED;
             return true;
         }
         return false;
