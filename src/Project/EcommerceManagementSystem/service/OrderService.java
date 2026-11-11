@@ -540,4 +540,506 @@ public class OrderService {
         }
         return topCustomer;
     }
+
+    public double getAverageOrderAmount(){
+        double total = 0;
+        int count = 0;
+
+        for(Order order : orders.values()){
+            if(order.getStatus() != OrderStatus.PENDING &&
+                    order.getStatus() != OrderStatus.CANCELLED){
+                total += order.getTotalAmount();
+                count++;
+            }
+        }
+
+        if(count == 0){
+            return 0;
+        }
+
+        double average = total / count;
+        return average;
+    }
+
+    public double getAverageOrderAmountByCustomer(String customerId){
+        if(customerId == null || customerId.isBlank()){
+            throw new IllegalArgumentException("Invalid customer ID");
+        }
+
+        double total = 0;
+        int count = 0;
+
+        for(Order order : orders.values()){
+            if(order.getCustomer().getId().equals(customerId)){
+                if(order.getStatus() != OrderStatus.CANCELLED && order.getStatus() != OrderStatus.PENDING){
+                    total += order.getTotalAmount();
+                    count++;
+                }
+
+            }
+        }
+
+        if(count == 0){
+            return 0;
+        }
+        return total / count;
+    }
+
+    public double getAverageOrderAmountByStatus(OrderStatus status){
+        if(status == null){
+            throw new IllegalArgumentException("Invalid status");
+        }
+
+        double total = 0;
+        int count = 0;
+
+        for(Order order : orders.values()){
+            if(order.getStatus() == status){
+                total += order.getTotalAmount();
+                count++;
+            }
+        }
+
+        if(count == 0){
+            return 0;
+        }
+        return total / count;
+    }
+
+    public double getAverageOrderAmountByCustomerAndStatus(String customerId, OrderStatus status){
+        if(customerId == null || customerId.isBlank()){
+            throw new IllegalArgumentException("Invalid customer ID");
+        }
+
+        if(status == null){
+            throw new IllegalArgumentException("Invalid status");
+        }
+
+        double total = 0;
+        int count = 0;
+
+        for (Order order : orders.values()){
+            if(order.getCustomer().getId().equals(customerId) && order.getStatus() == status){
+                total += order.getTotalAmount();
+                count++;
+            }
+        }
+
+        if(count == 0){
+            return 0;
+        }
+
+        return total / count;
+    }
+
+    public double getTotalRevenueByStatusAndCustomer(String customerId, OrderStatus status){
+        if(customerId == null || customerId.isBlank()){
+            throw new IllegalArgumentException("Invalid customer ID");
+        }
+
+        if(status == null){
+            throw new IllegalArgumentException("Invalid status");
+        }
+
+        double sum = 0;
+
+        for(Order order : orders.values()){
+            if(order.getCustomer().getId().equals(customerId) && order.getStatus() == status){
+                sum += order.getTotalAmount();
+            }
+        }
+        return sum;
+    }
+
+    public Map<OrderStatus, Double> getRevenueByStatus(){
+        Map<OrderStatus, Double> result = new HashMap<>();
+
+        for(Order order : orders.values()){
+            OrderStatus status = order.getStatus();
+            Double total = order.getTotalAmount();
+            result.merge(status, total, (oldValue, newValue) -> oldValue + newValue);
+        }
+        return result;
+    }
+
+    public Map<String, Double> getRevenueByCustomerAndStatus(OrderStatus status){
+        if(status == null){
+            throw new IllegalArgumentException("Invalid status");
+        }
+
+        Map<String, Double> result = new HashMap<>();
+
+        for(Order order : orders.values()){
+            if(order.getStatus() == status){
+                String customerId = order.getCustomer().getId();
+                Double total = order.getTotalAmount();
+                result.merge(customerId, total, (oldValue, newValue) -> oldValue + newValue);
+            }
+        }
+
+        return result;
+    }
+
+    public Map<OrderStatus, Integer> getOrderCountByStatus(){
+        Map<OrderStatus, Integer> result = new HashMap<>();
+
+        for (Order order : orders.values()){
+            OrderStatus orderStatus = order.getStatus();
+            result.merge(orderStatus, 1, (oldValue, newValue) -> oldValue + newValue);
+        }
+        return result;
+    }
+
+    public Map<String, Integer> getOrderCountByCustomer(){
+        Map<String, Integer> result = new HashMap<>();
+
+        for(Order order : orders.values()){
+            String customerId = order.getCustomer().getId();
+            result.merge(customerId, 1, Integer::sum);
+        }
+        return result;
+    }
+
+    public String getTopCustomerByOrderCount(){
+        Map<String, Integer> result = getOrderCountByCustomer();
+
+        String topCustomer = null;
+        int maxOrders = 0;
+
+        for(Map.Entry<String, Integer> entry : result.entrySet()){
+            if(entry.getValue() > maxOrders){
+                topCustomer = entry.getKey();
+                maxOrders = entry.getValue();
+            }
+
+        }
+            return topCustomer;
+    }
+
+    public String getTopCustomerByAverageOrderAmount(){
+        Map<String, Double> revenueByCustomer = new HashMap<>();
+        Map<String, Integer> countByCustomer = new HashMap<>();
+
+        for(Order order : orders.values()){
+            if(order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED){
+                String customerId = order.getCustomer().getId();
+                Double total = order.getTotalAmount();
+                revenueByCustomer.merge(customerId, total, (oldValue, newValue) -> oldValue + newValue);
+                countByCustomer.merge(customerId, 1, Integer::sum);
+            }
+        }
+        Map<String, Double> averageByCustomer = new HashMap<>();
+        for(Map.Entry<String, Double> entry : revenueByCustomer.entrySet()){
+            String customerId = entry.getKey();
+            double totalRevenue = entry.getValue();
+            int orderCount = countByCustomer.get(customerId);
+            double average = totalRevenue / orderCount;
+            averageByCustomer.put(customerId, average);
+        }
+
+        String topCustomer = null;
+        double maxAverage = 0;
+
+        for(Map.Entry<String, Double> entry : averageByCustomer.entrySet()){
+            if(entry.getValue() > maxAverage){
+                topCustomer = entry.getKey();
+                maxAverage = entry.getValue();
+            }
+
+        }
+        return topCustomer;
+    }
+
+    public String getTopCustomerByAverageOrderAmountWithMinOrders(int minOrders){
+        if(minOrders <= 0){
+            throw new IllegalArgumentException("Invalid order number");
+        }
+
+        Map<String, Double> revenueByCustomer = new HashMap<>();
+        Map<String, Integer> countByCustomer = new HashMap<>();
+
+        for(Order order : orders.values()){
+            if(order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED){
+                String customerId = order.getCustomer().getId();
+                double total = order.getTotalAmount();
+                revenueByCustomer.merge(customerId, total, (oldValue, newValue) -> oldValue + newValue);
+                countByCustomer.merge(customerId, 1, Integer::sum);
+            }
+        }
+
+        Map<String, Double> averageByCustomer = new HashMap<>();
+        for(Map.Entry<String, Double> entry : revenueByCustomer.entrySet()){
+            String customerId = entry.getKey();
+            double totalRevenue = entry.getValue();
+            int orderCount = countByCustomer.get(customerId);
+
+            if(orderCount >= minOrders){
+                double average = totalRevenue / orderCount;
+                averageByCustomer.put(customerId, average);
+            }
+        }
+
+        String topCustomer = null;
+        double maxAverage = 0;
+
+        for(Map.Entry<String, Double> entry : averageByCustomer.entrySet()){
+            if(entry.getValue() > maxAverage){
+                topCustomer = entry.getKey();
+                maxAverage = entry.getValue();
+            }
+
+        }
+        return topCustomer;
+    }
+
+    public Map<String, List<String>> getCustomersGroupedByRevenue(){
+        Map<String, Double> totalRevenue = new HashMap<>();
+        Map<String, List<String>> customersId = new HashMap<>();
+
+        for(Order order : orders.values()){
+            if(order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED){
+                String customerId = order.getCustomer().getId();
+                Double total = order.getTotalAmount();
+                totalRevenue.merge(customerId, total, (oldValue, newValue) -> oldValue + newValue);
+            }
+        }
+
+        for(Map.Entry<String, Double> entry : totalRevenue.entrySet()){
+            String customerId = entry.getKey();
+            double revenue = entry.getValue();
+            String category = null;
+
+            if(revenue < 100){
+                category = "LOW";
+            } else if (revenue >= 100 && revenue < 500) {
+                category = "MEDIUM";
+            }else {
+                category = "HIGH";
+            }
+            customersId.computeIfAbsent(category, k -> new ArrayList<>()).add(customerId);
+        }
+        return customersId;
+    }
+
+    public Map<String, List<String>> getCustomersGroupedByRevenueSorted(){
+        Map<String, Double> totalRevenue = new HashMap<>();
+        Map<String, List<String>> customersId = new HashMap<>();
+
+        for(Order order : orders.values()){
+            if(order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED){
+                String customerId = order.getCustomer().getId();
+                Double total = order.getTotalAmount();
+                totalRevenue.merge(customerId, total, (oldValue, newValue) -> oldValue + newValue);
+            }
+        }
+
+        for(Map.Entry<String, Double> entry : totalRevenue.entrySet()){
+            String customerId = entry.getKey();
+            double revenue = entry.getValue();
+            String category = null;
+
+            if(revenue < 100){
+                category = "LOW";
+            } else if (revenue >= 100 && revenue < 500) {
+                category = "MEDIUM";
+            }else {
+                category = "HIGH";
+            }
+            customersId.computeIfAbsent(category, k -> new ArrayList<>()).add(customerId);
+        }
+
+        for(List<String> customerIds : customersId.values()){
+            Collections.sort(customerIds);
+        }
+        return customersId;
+    }
+
+    public Map<Integer, List<String>> getCustomersGroupedByOrderCount(){
+            Map<Integer, List<String>> customersByOrderCount = new HashMap<>();
+            Map<String, Integer> order = getOrderCountByCustomer();
+
+            for(Map.Entry<String, Integer> entry : order.entrySet()){
+                String customerId = entry.getKey();
+                int numberOrders = entry.getValue();
+                customersByOrderCount.computeIfAbsent(numberOrders, k -> new ArrayList<>()).add(customerId);
+            }
+        return customersByOrderCount;
+    }
+
+    public Map<Integer, List<String>> getCustomersGroupedByOrderCountSorted(){
+        Map<Integer, List<String>> customersByOrderCount = getCustomersGroupedByOrderCount();
+
+        for(List<String> customerIds : customersByOrderCount.values()){
+            Collections.sort(customerIds);
+        }
+        return customersByOrderCount;
+    }
+
+    public List<String> getCustomersWithMinOrders(int minOrders){
+        if(minOrders <= 0){
+            throw new IllegalArgumentException("Invalid value");
+        }
+
+        Map<String, Integer> orderCountByCustomer = getOrderCountByCustomer();
+        List<String> result = new ArrayList<>();
+
+        for(Map.Entry<String, Integer> entry : orderCountByCustomer.entrySet()){
+            String customerId = entry.getKey();
+            int numberOrder = entry.getValue();
+
+            if(numberOrder >= minOrders){
+                result.add(customerId);
+            }
+        }
+            return result;
+    }
+
+    public List<String> getCustomersWithOrdersBetween(int minOrders, int maxOrders){
+        if(minOrders <= 0){
+            throw new IllegalArgumentException("Invalid min value");
+        }
+
+        if(maxOrders <= 0){
+            throw new IllegalArgumentException("Invalid max value");
+        }
+
+        if(minOrders > maxOrders){
+            throw new IllegalArgumentException("Invalid values");
+        }
+
+        Map<String, Integer> orderCountByCustomer = getOrderCountByCustomer();
+        List<String> result = new ArrayList<>();
+
+        for (Map.Entry<String, Integer> entry : orderCountByCustomer.entrySet()){
+            String customerId = entry.getKey();
+            int numberOrder = entry.getValue();
+
+            if(numberOrder >= minOrders && numberOrder <= maxOrders){
+                result.add(customerId);
+            }
+        }
+        return result;
+    }
+
+    public String getTopCustomerByOrderCountBetween(int minOrders, int maxOrders) {
+        if (minOrders <= 0) {
+            throw new IllegalArgumentException("Invalid min value");
+        }
+
+        if (maxOrders <= 0) {
+            throw new IllegalArgumentException("Invalid max value");
+        }
+
+        if(minOrders > maxOrders){
+            throw new IllegalArgumentException("Invalid values");
+        }
+
+        Map<String, Integer> orderCountByCustomer = getOrderCountByCustomer();
+
+        String topCustomer = null;
+        int max = 0;
+
+        for(Map.Entry<String, Integer> entry : orderCountByCustomer.entrySet()){
+            if(entry.getValue() >= minOrders && entry.getValue() <= maxOrders){
+                if(entry.getValue() > max){
+                    max = entry.getValue();
+                    topCustomer = entry.getKey();
+                }
+            }
+        }
+        return topCustomer;
+    }
+
+    public Map<String, Integer> getOrderCountByCustomerAndStatus(OrderStatus status){
+        if(status == null){
+            throw new IllegalArgumentException("Invalid status");
+        }
+
+        Map<String, Integer> result = new HashMap<>();
+        List<Order> filteredOrders = getOrdersByStatus(status);
+
+        for(Order order : filteredOrders){
+            String customerId = order.getCustomer().getId();
+            result.merge(customerId, 1, Integer::sum);
+        }
+        return result;
+    }
+
+    public Map<OrderStatus, Integer> getOrderCountByCustomerGroupedByStatus(String customerId){
+        if(customerId == null || customerId.isBlank()){
+            throw new IllegalArgumentException("Invalid customer ID");
+        }
+
+        Map<OrderStatus, Integer> result = new HashMap<>();
+        List<Order> orderList = getOrdersByCustomer(customerId);
+
+        for(Order order : orderList){
+            OrderStatus orderStatus = order.getStatus();
+            result.merge(orderStatus, 1, Integer::sum);
+        }
+        return result;
+    }
+
+    public Map<OrderStatus, Double> getRevenueByCustomerGroupedByStatus(String customerId){
+        if(customerId == null || customerId.isBlank()){
+            throw new IllegalArgumentException("Invalid customer ID");
+        }
+
+        Map<OrderStatus, Double> result = new HashMap<>();
+        List<Order> orderList = getOrdersByCustomer(customerId);
+
+        for(Order order : orderList){
+            OrderStatus orderStatus = order.getStatus();
+            Double total = order.getTotalAmount();
+            result.merge(orderStatus, total, Double::sum);
+        }
+        return result;
+    }
+
+    public Map<String, Double> getAverageOrderAmountByCustomerAndStatus(OrderStatus status){
+        if(status == null){
+            throw new IllegalArgumentException("Invalid status");
+        }
+
+        Map<String, Double> totalRevenue = new HashMap<>();
+        Map<String, Integer> orderCount = new HashMap<>();
+        List<Order> orderList = getOrdersByStatus(status);
+
+        for(Order order : orderList){
+            String customerId = order.getCustomer().getId();
+            double totalAmount = order.getTotalAmount();
+            totalRevenue.merge(customerId, totalAmount, Double::sum);
+            orderCount.merge(customerId, 1, Integer::sum);
+        }
+
+        Map<String, Double> averageByCustomer = new HashMap<>();
+        for(Map.Entry<String, Double> entry : totalRevenue.entrySet()){
+            String customerId = entry.getKey();
+            double total = entry.getValue();
+            int numberOfOrders = orderCount.get(customerId);
+            double average = total / numberOfOrders;
+            averageByCustomer.put(customerId, average);
+        }
+        return averageByCustomer;
+    }
+
+    public String getTopCustomerByAverageOrderAmountAndStatus(OrderStatus status){
+       if(status == null){
+            throw new IllegalArgumentException("Invalid status");
+        }
+
+        Map<String, Double> average = getAverageOrderAmountByCustomerAndStatus(status);
+
+        String topCustomer = null;
+        double maxAverage = 0;
+
+        for(Map.Entry<String, Double> entry : average.entrySet()){
+            if(entry.getValue() > maxAverage){
+                topCustomer = entry.getKey();
+                maxAverage = entry.getValue();
+            }
+
+        }
+        return topCustomer;
+    }
 }
