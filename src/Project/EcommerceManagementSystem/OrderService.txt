@@ -1,0 +1,669 @@
+# Scheda di riferimento – `OrderService`
+
+## 1. Struttura della classe
+
+La classe `OrderService` gestisce gli ordini dell'e-commerce.
+
+Il suo archivio principale è:
+
+```java
+private final Map<String, Order> orders;
+```
+
+- **Chiave (`String`)**: ID dell'ordine.
+- **Valore (`Order`)**: oggetto ordine corrispondente.
+- **Implementazione**: `HashMap`.
+
+Il costruttore inizializza la mappa vuota:
+
+```java
+public OrderService() {
+    orders = new HashMap<>();
+}
+```
+
+---
+
+## 2. Gestione di base degli ordini
+
+### `addOrder(Order order) → boolean`
+
+Aggiunge un ordine alla mappa.
+
+1. Controlla che l'ordine non sia `null`.
+2. Controlla che il suo ID non sia già presente.
+3. Se esiste già, restituisce `false`.
+4. Altrimenti lo inserisce e restituisce `true`.
+
+### `removeOrder(String orderId) → Order`
+
+Rimuove un ordine utilizzando il suo ID.
+
+- Controlla che l'ID sia valido.
+- Se l'ordine esiste, lo rimuove e lo restituisce.
+- Se non esiste, restituisce `null`.
+
+**Attenzione:** al momento non controlla lo stato dell'ordine. Rimuovere direttamente un ordine confermato può causare problemi perché non viene ripristinato lo stock.
+
+### `findOrderById(String orderId) → Order`
+
+Cerca un ordine tramite ID.
+
+- Restituisce l'ordine se esiste.
+- Restituisce `null` se non viene trovato.
+
+### `getOrderCount() → int`
+
+Restituisce il numero totale di ordini presenti nella mappa.
+
+### `getAllOrders() → List<Order>`
+
+Restituisce una nuova lista contenente tutti gli ordini.
+
+La lista è una copia della struttura originale: aggiungere o rimuovere elementi da essa non modifica la mappa `orders`, ma gli oggetti `Order` contenuti sono gli stessi riferimenti.
+
+---
+
+## 3. Ricerca e filtraggio degli ordini
+
+### `getOrdersByStatus(OrderStatus status) → List<Order>`
+
+Restituisce tutti gli ordini che hanno uno specifico stato.
+
+Esempio: passando `OrderStatus.CONFIRMED`, restituisce tutti gli ordini confermati.
+
+### `countOrdersByStatus(OrderStatus status) → int`
+
+Conta quanti ordini hanno uno specifico stato.
+
+A differenza del metodo precedente, restituisce solamente un numero.
+
+### `getOrdersByCustomer(String customerId) → List<Order>`
+
+Restituisce tutti gli ordini appartenenti a un determinato cliente.
+
+Confronta l'ID ricevuto con quello del cliente associato a ogni ordine.
+
+### `getOrdersBetweenDates(LocalDateTime startDate, LocalDateTime endDate) → List<Order>`
+
+Restituisce gli ordini effettuati in un intervallo temporale.
+
+Gli estremi sono inclusi:
+- data dell'ordine uguale a `startDate`: inclusa;
+- data dell'ordine uguale a `endDate`: inclusa.
+
+Controlla anche che le date non siano `null` e che la data iniziale non sia successiva a quella finale.
+
+### `getOrdersAboveAmount(double minAmount) → List<Order>`
+
+Restituisce gli ordini il cui importo totale è **strettamente maggiore** di `minAmount`.
+
+Esempio: con soglia 100 €, un ordine da 100 € non viene incluso.
+
+### `getOrdersByCustomerAndMinAmount(String customerId, double minAmount) → List<Order>`
+
+Restituisce gli ordini di un cliente il cui importo è maggiore o uguale alla soglia.
+
+### `getOrdersByCustomerStatusAndMinAmount(String customerId, OrderStatus status, double minAmount) → List<Order>`
+
+Combina tre condizioni:
+- ID del cliente;
+- stato dell'ordine;
+- importo maggiore o uguale alla soglia.
+
+Restituisce solamente gli ordini che rispettano tutte e tre le condizioni.
+
+### `getOrdersByStatusAndCustomer(String customerId, OrderStatus status) → List<Order>`
+
+Restituisce gli ordini che appartengono al cliente indicato e che hanno lo stato specificato.
+
+### `countOrdersByStatusAndCustomer(String customerId, OrderStatus status) → int`
+
+Conta gli ordini di un cliente che hanno uno specifico stato.
+
+È la versione che restituisce un conteggio anziché una lista.
+
+---
+
+## 4. Ordinamento e ricerca di ordini estremi
+
+### `getOrdersSortedByAmount() → List<Order>`
+
+Restituisce una nuova lista di ordini ordinata per importo totale crescente.
+
+Utilizza `Comparator.comparing()` e `sort()`.
+
+### `getOrdersSortedByAmountDescending() → List<Order>`
+
+Restituisce una nuova lista ordinata per importo totale decrescente.
+
+Utilizza `Comparator.comparing().reversed()`.
+
+### `getMostExpensiveOrder() → Order`
+
+Trova l'ordine con l'importo totale più alto.
+
+- Scorre tutti gli ordini.
+- Confronta gli importi.
+- Mantiene il riferimento all'ordine più costoso trovato.
+
+Restituisce `null` se non ci sono ordini.
+
+### `getCheapestOrder() → Order`
+
+Trova l'ordine con l'importo totale più basso.
+
+Restituisce `null` se la mappa è vuota.
+
+### `getMostExpensiveOrderByStatus(OrderStatus status) → Order`
+
+Trova l'ordine più costoso tra quelli che hanno lo stato specificato.
+
+### `getCheapestOrderByStatus(OrderStatus status) → Order`
+
+Trova l'ordine meno costoso tra quelli che hanno lo stato specificato.
+
+Entrambi restituiscono `null` se non esistono ordini con quello stato.
+
+---
+
+## 5. Raggruppamento degli ordini
+
+### `groupOrdersByStatus() → Map<OrderStatus, List<Order>>`
+
+Raggruppa tutti gli ordini in base al loro stato.
+
+Esempio concettuale:
+
+- `PENDING` → lista degli ordini in attesa;
+- `CONFIRMED` → lista degli ordini confermati;
+- `SHIPPED` → lista degli ordini spediti.
+
+Utilizza `computeIfAbsent()` per creare una lista quando incontra uno stato per la prima volta.
+
+### `groupOrdersByCustomer() → Map<String, List<Order>>`
+
+Raggruppa tutti gli ordini in base all'ID del cliente.
+
+Ogni cliente diventa una chiave e il valore associato è una lista contenente i suoi ordini.
+
+---
+
+## 6. Calcoli e statistiche per cliente
+
+### `getTotalAmountByCustomer() → Map<String, Double>`
+
+Calcola la somma degli importi di tutti gli ordini di ciascun cliente.
+
+Restituisce una mappa:
+
+- chiave: ID cliente;
+- valore: importo totale.
+
+Include tutti gli stati degli ordini.
+
+Utilizza `merge()` per sommare gli importi quando trova più ordini dello stesso cliente.
+
+### `countOrdersByCustomer() → Map<String, Integer>`
+
+Conta quanti ordini ha effettuato ciascun cliente.
+
+Restituisce una mappa con ID cliente e numero di ordini.
+
+### `getTopCustomerByOrderCount() → String`
+
+Trova il cliente che ha effettuato il maggior numero di ordini.
+
+Utilizza `getOrderCountByCustomer()` per ottenere i conteggi e poi individua il valore massimo.
+
+Restituisce l'ID del cliente oppure `null` se non ci sono ordini.
+
+Considera tutti gli stati.
+
+### `getTopCustomerByRevenue() → String`
+
+Trova il cliente che ha generato il maggior fatturato.
+
+Considera solamente gli ordini:
+- `CONFIRMED`;
+- `SHIPPED`;
+- `DELIVERED`.
+
+Prima calcola il fatturato per cliente usando `merge()`, poi cerca il valore massimo.
+
+Restituisce l'ID del cliente oppure `null`.
+
+### `getTopCustomerByAverageOrderAmount() → String`
+
+Trova il cliente con il valore medio degli ordini più alto.
+
+Procedimento:
+1. Calcola il fatturato per cliente.
+2. Conta gli ordini validi per cliente.
+3. Calcola la media dividendo fatturato per numero di ordini.
+4. Individua il cliente con la media più alta.
+
+Considera solamente gli ordini confermati, spediti e consegnati.
+
+### `getTopCustomerByAverageOrderAmountWithMinOrders(int minOrders) → String`
+
+Come il metodo precedente, ma considera solamente i clienti che hanno effettuato almeno `minOrders` ordini validi.
+
+Se il parametro è minore o uguale a zero, genera un'eccezione.
+
+---
+
+## 7. Gestione del ciclo di vita dell'ordine
+
+### `confirmOrder(String orderId) → boolean`
+
+Conferma un ordine e scala le quantità dal magazzino.
+
+Procedimento:
+1. Controlla che l'ID sia valido.
+2. Cerca l'ordine.
+3. Verifica che esista e sia modificabile.
+4. Verifica che non sia vuoto.
+5. Controlla che ogni prodotto abbia disponibilità sufficiente.
+6. Solo dopo aver verificato tutti i prodotti, scala le quantità.
+7. Cambia lo stato dell'ordine in `CONFIRMED`.
+
+Restituisce `true` se la conferma va a buon fine, altrimenti `false`.
+
+**Importante:** prima verifica la disponibilità di tutti i prodotti e poi modifica lo stock. In questo modo evita di scalare solo una parte delle quantità quando un prodotto non è disponibile.
+
+### `cancelOrder(String orderId) → boolean`
+
+Annulla un ordine confermato.
+
+Procedimento:
+1. Cerca l'ordine.
+2. Verifica che esista.
+3. Controlla che il suo stato sia `CONFIRMED`.
+4. Ripristina le quantità dei prodotti nel magazzino.
+5. Cambia lo stato dell'ordine in `CANCELLED`.
+
+Restituisce `true` se l'operazione riesce, altrimenti `false`.
+
+### `shipOrder(String orderId) → boolean`
+
+Spedisce un ordine.
+
+- Cerca l'ordine.
+- Verifica che esista.
+- Verifica che sia nello stato `CONFIRMED`.
+- Cambia lo stato in `SHIPPED`.
+
+### `deliverOrder(String orderId) → boolean`
+
+Segna un ordine come consegnato.
+
+- Cerca l'ordine.
+- Verifica che esista.
+- Verifica che sia nello stato `SHIPPED`.
+- Cambia lo stato in `DELIVERED`.
+
+La sequenza prevista è:
+
+`PENDING → CONFIRMED → SHIPPED → DELIVERED`
+
+L'annullamento gestito dal servizio è previsto per gli ordini confermati.
+
+---
+
+## 8. Ricerca e statistiche sui prodotti
+
+### `getOrdersContainingProduct(String productId) → List<Order>`
+
+Restituisce tutti gli ordini che contengono un determinato prodotto.
+
+Utilizza `order.containsProduct(productId)`.
+
+Non applica filtri sullo stato.
+
+### `countOrdersContainingProduct(String productId) → int`
+
+Conta quanti ordini contengono un determinato prodotto.
+
+### `getTotalQuantitySold(String productId) → int`
+
+Calcola la quantità complessiva venduta di un prodotto.
+
+Considera solamente gli ordini:
+- `CONFIRMED`;
+- `SHIPPED`;
+- `DELIVERED`.
+
+Per ogni ordine cerca il relativo `OrderItem` e somma la sua quantità.
+
+### `getTotalRevenueByProduct(String productId) → double`
+
+Calcola il fatturato complessivo generato da un prodotto.
+
+Considera gli ordini confermati, spediti e consegnati.
+
+Per ogni ordine:
+1. Cerca il prodotto.
+2. Recupera il relativo `OrderItem`.
+3. Ottiene il subtotale tramite `getSubtotal()`.
+4. Somma i subtotali.
+
+Utilizza il prezzo unitario memorizzato nell'`OrderItem`, quindi il prezzo storico dell'acquisto.
+
+---
+
+## 9. Fatturato e importi medi
+
+### `getTotalRevenueByCustomer(String customerId) → double`
+
+Calcola il fatturato totale generato da un cliente.
+
+Considera solamente gli ordini confermati, spediti e consegnati.
+
+### `getAverageOrderAmount() → double`
+
+Calcola l'importo medio degli ordini.
+
+Somma gli importi e divide per il numero degli ordini considerati.
+
+Esclude `PENDING` e `CANCELLED`.
+
+Restituisce `0` se non ci sono ordini validi.
+
+### `getAverageOrderAmountByCustomer(String customerId) → double`
+
+Calcola l'importo medio degli ordini di un cliente.
+
+Esclude gli ordini `PENDING` e `CANCELLED`.
+
+Restituisce `0` se non ci sono ordini da considerare.
+
+### `getAverageOrderAmountByStatus(OrderStatus status) → double`
+
+Calcola l'importo medio degli ordini che hanno uno specifico stato.
+
+Non esclude automaticamente alcuno stato: considera esattamente quello richiesto.
+
+### `getAverageOrderAmountByCustomerAndStatus(String customerId, OrderStatus status) → double`
+
+Calcola l'importo medio degli ordini di un determinato cliente che hanno uno specifico stato.
+
+### `getTotalRevenueByStatusAndCustomer(String customerId, OrderStatus status) → double`
+
+Calcola la somma degli importi degli ordini appartenenti a un cliente e aventi lo stato indicato.
+
+Restituisce `0` se non trova ordini corrispondenti.
+
+---
+
+## 10. Raggruppamento del fatturato e dei conteggi
+
+### `getRevenueByStatus() → Map<OrderStatus, Double>`
+
+Calcola il fatturato totale per ciascuno stato.
+
+Esempio concettuale:
+- `CONFIRMED` → somma degli ordini confermati;
+- `SHIPPED` → somma degli ordini spediti.
+
+Include tutti gli stati presenti, anche `PENDING` e `CANCELLED`.
+
+### `getRevenueByCustomerAndStatus(OrderStatus status) → Map<String, Double>`
+
+Dato uno stato, calcola il fatturato generato da ciascun cliente per quello stato.
+
+La chiave è l'ID cliente, il valore è il totale dei suoi ordini nello stato richiesto.
+
+### `getOrderCountByStatus() → Map<OrderStatus, Integer>`
+
+Conta quanti ordini esistono per ciascuno stato.
+
+### `getOrderCountByCustomer() → Map<String, Integer>`
+
+Conta quanti ordini ha ciascun cliente.
+
+### `getOrderCountByCustomerAndStatus(OrderStatus status) → Map<String, Integer>`
+
+Dato uno stato, conta quanti ordini di quello stato ha effettuato ciascun cliente.
+
+### `getOrderCountByCustomerGroupedByStatus(String customerId) → Map<OrderStatus, Integer>`
+
+Dato un cliente, conta i suoi ordini e li raggruppa per stato.
+
+### `getRevenueByCustomerGroupedByStatus(String customerId) → Map<OrderStatus, Double>`
+
+Dato un cliente, calcola il suo fatturato suddiviso per stato.
+
+Include tutti gli stati, anche quelli che non rappresentano ancora vendite concluse.
+
+---
+
+## 11. Raggruppamento dei clienti per fasce e numero di ordini
+
+### `getCustomersGroupedByRevenue() → Map<String, List<String>>`
+
+Raggruppa i clienti in base al fatturato complessivo.
+
+Le fasce sono:
+- `LOW`: fatturato inferiore a 100;
+- `MEDIUM`: fatturato da 100 incluso a meno di 500;
+- `HIGH`: fatturato pari o superiore a 500.
+
+Il fatturato considera solamente ordini confermati, spediti e consegnati.
+
+La chiave della mappa è la fascia e il valore è la lista degli ID dei clienti.
+
+### `getCustomersGroupedByRevenueSorted() → Map<String, List<String>>`
+
+Esegue lo stesso raggruppamento del metodo precedente.
+
+In più ordina alfabeticamente gli ID dei clienti all'interno di ogni lista.
+
+Riutilizza `getCustomersGroupedByRevenue()`.
+
+### `getCustomersGroupedByOrderCount() → Map<Integer, List<String>>`
+
+Raggruppa i clienti in base al numero totale di ordini.
+
+Esempio:
+- `1` → clienti con un ordine;
+- `2` → clienti con due ordini;
+- `3` → clienti con tre ordini.
+
+Utilizza `getOrderCountByCustomer()` e `computeIfAbsent()`.
+
+### `getCustomersGroupedByOrderCountSorted() → Map<Integer, List<String>>`
+
+Esegue lo stesso raggruppamento del metodo precedente.
+
+In più ordina alfabeticamente gli ID dei clienti all'interno di ogni lista.
+
+### `getCustomersWithMinOrders(int minOrders) → List<String>`
+
+Restituisce gli ID dei clienti che hanno effettuato almeno il numero di ordini specificato.
+
+### `getCustomersWithOrdersBetween(int minOrders, int maxOrders) → List<String>`
+
+Restituisce gli ID dei clienti che hanno effettuato un numero di ordini compreso tra il minimo e il massimo, estremi inclusi.
+
+Controlla che:
+- entrambi i valori siano positivi;
+- il minimo non sia superiore al massimo.
+
+### `getTopCustomerByOrderCountBetween(int minOrders, int maxOrders) → String`
+
+Trova il cliente con il maggior numero di ordini tra quelli che rientrano nell'intervallo indicato.
+
+Restituisce l'ID del cliente oppure `null` se nessuno soddisfa i criteri.
+
+---
+
+## 12. Statistiche combinate per cliente e stato
+
+### `getAverageOrderAmountByCustomerAndStatus(OrderStatus status) → Map<String, Double>`
+
+Dato uno stato, calcola l'importo medio degli ordini per ciascun cliente.
+
+Esempio: passando `CONFIRMED`, restituisce una mappa con gli ID dei clienti e il valore medio dei loro ordini confermati.
+
+**Nota:** il nome del metodo può trarre in inganno: riceve solamente lo stato e restituisce una media per cliente.
+
+### `getTopCustomerByAverageOrderAmountAndStatus(OrderStatus status) → String`
+
+Trova il cliente con l'importo medio degli ordini più alto per lo stato indicato.
+
+Riutilizza `getAverageOrderAmountByCustomerAndStatus(status)` e cerca il valore massimo.
+
+### `getTopCustomerByAverageOrderAmountGroupedByStatus() → Map<OrderStatus, String>`
+
+Per ogni stato individua il cliente con l'importo medio degli ordini più alto.
+
+Restituisce:
+- chiave: stato;
+- valore: ID del cliente migliore per quello stato.
+
+Gli stati senza clienti vengono esclusi dalla mappa.
+
+### `getAverageOrderAmountByStatus() → Map<OrderStatus, Double>`
+
+Calcola l'importo medio degli ordini per ogni stato presente.
+
+Utilizza `OrderStatus.values()` per scorrere tutti gli stati e richiama il metodo che calcola la media per un singolo stato.
+
+Inserisce nella mappa solamente gli stati per i quali esiste almeno un ordine.
+
+### `getTopCustomerOrderCountByStatus() → Map<OrderStatus, Integer>`
+
+Per ogni stato individua il numero massimo di ordini effettuati da un singolo cliente.
+
+Restituisce:
+- chiave: stato;
+- valore: numero massimo di ordini di quel cliente nello stato.
+
+**Attenzione:** non restituisce l'ID del cliente, ma il suo numero di ordini.
+
+### `getOrderCountByStatusGroupedByCustomer(String customerId) → Map<OrderStatus, Integer>`
+
+Dato un cliente, conta i suoi ordini e li raggruppa per stato.
+
+È sostanzialmente lo stesso comportamento di `getOrderCountByCustomerGroupedByStatus()`, con una diversa disposizione delle parole nel nome.
+
+### `getRevenueByStatusGroupedByCustomer(String customerId) → Map<OrderStatus, Double>`
+
+Dato un cliente, calcola il fatturato dei suoi ordini suddiviso per stato.
+
+È sostanzialmente lo stesso comportamento di `getRevenueByCustomerGroupedByStatus()`.
+
+### `getAverageOrderAmountGroupedByCustomer(String customerId) → Map<OrderStatus, Double>`
+
+Dato un cliente, calcola l'importo medio degli ordini per ciascuno stato.
+
+Procedimento:
+1. Recupera il fatturato per stato del cliente.
+2. Recupera il numero di ordini per stato.
+3. Divide il fatturato per il numero di ordini.
+4. Inserisce il risultato nella mappa.
+
+### `getMostExpensiveOrderGroupedByCustomer(String customerId) → Map<OrderStatus, Order>`
+
+Dato un cliente, individua il suo ordine più costoso per ciascuno stato.
+
+Restituisce una mappa in cui:
+- chiave: stato;
+- valore: ordine più costoso in quello stato.
+
+### `getCheapestOrderAmountGroupedByCustomer(String customerId) → Map<OrderStatus, Double>`
+
+Dato un cliente, individua l'importo del suo ordine meno costoso per ciascuno stato.
+
+Restituisce una mappa con stato e importo minimo.
+
+### `getTotalItemsGroupedByCustomer(String customerId) → Map<OrderStatus, Integer>`
+
+Dato un cliente, calcola il numero totale di articoli contenuti nei suoi ordini, raggruppandoli per stato.
+
+Per ogni ordine:
+1. Recupera gli `OrderItem`.
+2. Legge la quantità di ogni articolo.
+3. Somma le quantità nella mappa associata allo stato.
+
+### `getTotalRevenueGroupedByCustomerAndStatus(String customerId) → Map<OrderStatus, Double>`
+
+Dato un cliente, calcola il fatturato derivante dagli articoli contenuti nei suoi ordini, raggruppandolo per stato.
+
+Per ogni `OrderItem`:
+1. Calcola il subtotale tramite `getSubtotal()`.
+2. Somma il subtotale nella mappa associata allo stato dell'ordine.
+
+### `getAverageItemsPerOrderGroupedByCustomer(String customerId) → Map<OrderStatus, Double>`
+
+Dato un cliente, calcola il numero medio di articoli per ordine, suddiviso per stato.
+
+Procedimento:
+1. Calcola il totale degli articoli per ogni stato.
+2. Conta quanti ordini esistono per ogni stato.
+3. Divide il totale degli articoli per il numero degli ordini.
+4. Restituisce la media per ciascuno stato.
+
+### `getTopCustomerByAverageItemsPerOrder() → String`
+
+Trova il cliente che ha il numero medio più alto di articoli per ordine.
+
+Considera solamente gli ordini:
+- `CONFIRMED`;
+- `SHIPPED`;
+- `DELIVERED`.
+
+Procedimento:
+1. Calcola il totale degli articoli per cliente.
+2. Conta gli ordini validi per cliente.
+3. Calcola la media degli articoli per ordine.
+4. Individua il cliente con la media più alta.
+
+Restituisce l'ID del cliente oppure `null` se non ci sono ordini validi.
+
+---
+
+# 13. Concetti Java da ricordare
+
+| Concetto | A cosa serve nel progetto |
+|---|---|
+| `HashMap` | Memorizzare gli ordini e le statistiche tramite coppie chiave-valore. |
+| `ArrayList` | Costruire liste di ordini e clienti. |
+| `Map.Entry` | Accedere contemporaneamente a chiave e valore di una mappa. |
+| `Map.merge()` | Inserire un valore oppure combinarlo con quello già presente. |
+| `computeIfAbsent()` | Creare un valore associato a una chiave solamente se manca. |
+| `Comparator` | Definire come ordinare gli ordini. |
+| `sort()` | Ordinare una lista. |
+| `reversed()` | Invertire l'ordine del comparatore. |
+| `Integer::sum` | Sommare due interi, utile per i conteggi. |
+| `Double::sum` | Sommare due valori decimali. |
+| `OrderStatus.values()` | Ottenere tutti i valori dell'enum. |
+| `isBlank()` | Verificare se una stringa è vuota o contiene solo spazi. |
+| `Double.isFinite()` | Verificare che un valore decimale non sia infinito o `NaN`. |
+| `LocalDateTime` | Gestire date e orari degli ordini. |
+| `Collections.sort()` | Ordinare le liste di ID cliente. |
+
+---
+
+# 14. Regole importanti della logica di business
+
+1. **Conferma:** lo stock viene scalato solamente quando un ordine viene confermato.
+2. **Annullamento:** quando viene annullato un ordine confermato, le quantità vengono restituite al magazzino.
+3. **Spedizione:** un ordine può essere spedito solamente se è confermato.
+4. **Consegna:** un ordine può essere consegnato solamente se è spedito.
+5. **Statistiche di vendita:** i metodi che calcolano fatturato e quantità vendute generalmente considerano `CONFIRMED`, `SHIPPED` e `DELIVERED`.
+6. **Statistiche generali:** alcuni metodi, come i conteggi degli ordini, considerano invece tutti gli stati.
+7. **Prezzo storico:** il subtotale di un `OrderItem` utilizza il prezzo unitario memorizzato al momento dell'acquisto, non il prezzo attuale del prodotto.
+
+# 15. Osservazioni per la revisione del codice
+
+Questi sono alcuni punti da ricordare quando rifiniremo il progetto:
+
+- `removeOrder()` dovrebbe gestire correttamente gli ordini confermati, per evitare di perdere lo stock già scalato.
+- Alcuni metodi hanno nomi molto simili e potrebbero essere rinominati per rendere più chiaro il loro comportamento.
+- `getOrderCountByStatusGroupedByCustomer()` e `getOrderCountByCustomerGroupedByStatus()` svolgono la stessa operazione.
+- `getRevenueByStatusGroupedByCustomer()` e `getRevenueByCustomerGroupedByStatus()` svolgono la stessa operazione.
+- Per gli importi monetari, in un progetto più realistico è preferibile valutare `BigDecimal` al posto di `double`.
+- Alcuni metodi ripetono controlli e cicli che in futuro potrebbero essere centralizzati o riutilizzati.
+
