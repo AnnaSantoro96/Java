@@ -17,7 +17,7 @@ public class OrderItem {
         this.unitPrice = unitPrice;
     }
 
-    public Product getProduct() {
+     Product getProduct() {
         return product;
     }
 
@@ -25,7 +25,7 @@ public class OrderItem {
         return quantity;
     }
 
-    public void setQuantity(int quantity) {
+    void setQuantity(int quantity) {
         if(quantity <= 0){
             throw new IllegalArgumentException("Invalid quantity");
         }

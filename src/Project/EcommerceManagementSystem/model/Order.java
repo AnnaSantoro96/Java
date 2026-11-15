@@ -250,6 +250,7 @@ public class Order {
     }
 
     public void confirmOrder(){
+
         if(!isModifiable()){
             throw new IllegalStateException("Order cannot be confirmed");
         }
@@ -258,11 +259,22 @@ public class Order {
             throw new IllegalStateException("The list is empty");
         }
 
+        for(OrderItem item : items){
+            if(item.getQuantity() > item.getProduct().getQuantity()){
+                throw new IllegalArgumentException("Insufficient stock");
+            }
+        }
+
+        for(OrderItem item : items){
+            int quantity = item.getProduct().getQuantity() - item.getQuantity();
+            item.getProduct().setQuantity(quantity);
+        }
+
         this.status = OrderStatus.CONFIRMED;
     }
 
     public boolean cancelOrder(){
-        if(status == OrderStatus.PENDING || status == OrderStatus.CONFIRMED){
+        if(status == OrderStatus.PENDING){
             status = OrderStatus.CANCELLED;
             return true;
         }

@@ -62,8 +62,9 @@ public class OrderService {
                 result.add(order);
             }
         }
-        return result;
+        return Collections.unmodifiableList(result);
     }
+
     public int countOrdersByStatus(OrderStatus status){
         if(status == null){
             throw new IllegalArgumentException("Invalid status");
@@ -79,7 +80,7 @@ public class OrderService {
     }
 
     public List<Order> getAllOrders(){
-        return new ArrayList<>(orders.values());
+        return Collections.unmodifiableList(new ArrayList<>(orders.values()));
     }
 
     public List<Order> getOrdersByCustomer(String customerId){
@@ -91,11 +92,11 @@ public class OrderService {
         for(Order order : orders.values()){
             Customer customer = order.getCustomer();
 
-            if(customer.getId().equals(customerId)){
+            if(customer.getId().equalsIgnoreCase(customerId)){
                 result.add(order);
             }
         }
-        return result;
+        return Collections.unmodifiableList(result);
     }
 
     public List<Order> getOrdersBetweenDates(LocalDateTime startDate, LocalDateTime endDate){
@@ -118,7 +119,7 @@ public class OrderService {
                 result.add(order);
             }
         }
-        return result;
+        return Collections.unmodifiableList(result);
     }
 
     public List<Order> getOrdersAboveAmount(double minAmount){
@@ -132,20 +133,20 @@ public class OrderService {
                 result.add(order);
             }
         }
-        return result;
+        return Collections.unmodifiableList(result);
     }
 
     public List<Order> getOrdersSortedByAmount(){
         List<Order> result = new ArrayList<>(orders.values());
         Comparator<Order> comparator = Comparator.comparing(Order::getTotalAmount);
          result.sort(comparator);
-         return result;
+        return Collections.unmodifiableList(result);
     }
     public List<Order> getOrdersSortedByAmountDescending(){
         List<Order> result = new ArrayList<>(orders.values());
         Comparator<Order> comparator = Comparator.comparing(Order::getTotalAmount).reversed();
         result.sort(comparator);
-        return result;
+        return Collections.unmodifiableList(result);
     }
     public Order getMostExpensiveOrder(){
         if(orders.isEmpty()){
@@ -183,7 +184,17 @@ public class OrderService {
             List<Order> orderList = result.computeIfAbsent(status, s -> new ArrayList<>());
             orderList.add(order);
         }
-        return result;
+
+        Map<OrderStatus, List<Order>> immutableResult = new HashMap<>();
+
+        for(Map.Entry<OrderStatus, List<Order>> entry : result.entrySet()){
+
+            OrderStatus status = entry.getKey();
+
+            List<Order> orderList = entry.getValue();
+            immutableResult.put(status, Collections.unmodifiableList(orderList));
+        }
+        return Collections.unmodifiableMap(immutableResult);
     }
 
     public Map<String, List<Order>> groupOrdersByCustomer(){
@@ -194,7 +205,14 @@ public class OrderService {
             List<Order> orderList = result.computeIfAbsent(customerId, id -> new ArrayList<>());
             orderList.add(order);
         }
-        return result;
+
+        Map<String, List<Order>> immutableResult = new HashMap<>();
+        for(Map.Entry<String, List<Order>> entry : result.entrySet()){
+            String  customerId = entry.getKey();
+            List<Order> orderList = entry.getValue();
+            immutableResult.put(customerId, Collections.unmodifiableList(orderList));
+        }
+        return Collections.unmodifiableMap(immutableResult);
     }
 
     public Map<String, Double> getTotalAmountByCustomer(){
@@ -225,30 +243,11 @@ public class OrderService {
         }
 
         Order order = findOrderById(orderId);
+
         if(order == null){
             return false;
         }
 
-        if(!order.isModifiable()){
-            return false;
-        }
-
-        if(order.isEmpty()){
-            return false;
-        }
-
-        for (OrderItem orderItem : order.getItems()){
-            if(orderItem.getQuantity() > orderItem.getProduct().getQuantity()){
-                return false;
-            }
-        }
-
-        for(OrderItem orderItem : order.getItems()){
-            int available = orderItem.getProduct().getQuantity();
-            int ordered = orderItem.getQuantity();
-            int newQuantity = available - ordered;
-            orderItem.getProduct().setQuantity(newQuantity);
-        }
         order.confirmOrder();
         return true;
     }
@@ -263,18 +262,7 @@ public class OrderService {
             return false;
         }
 
-        if (order.getStatus() != OrderStatus.CONFIRMED){
-            return false;
-        }
-
-        for(OrderItem orderItem : order.getItems()){
-            int available = orderItem.getProduct().getQuantity();
-            int ordered = orderItem.getQuantity();
-            int newQuantity = available + ordered;
-            orderItem.getProduct().setQuantity(newQuantity);
-        }
-        order.cancelOrder();
-        return true;
+        return order.cancelOrder();
     }
 
     public boolean shipOrder(String orderId){
@@ -283,16 +271,12 @@ public class OrderService {
         }
 
         Order order = findOrderById(orderId);
+
         if(order == null){
             return false;
         }
 
-        if (order.getStatus() != OrderStatus.CONFIRMED){
-            return false;
-        }
-
-        order.shipOrder();
-        return true;
+        return order.shipOrder();
     }
 
     public boolean deliverOrder(String orderId){
@@ -301,16 +285,12 @@ public class OrderService {
         }
 
         Order order = findOrderById(orderId);
+
         if(order == null){
             return false;
         }
 
-        if (order.getStatus() != OrderStatus.SHIPPED){
-            return false;
-        }
-
-        order.deliverOrder();
-        return true;
+        return order.deliverOrder();
     }
 
     public List<Order> getOrdersByStatusAndCustomer(String customerId, OrderStatus status){
@@ -508,7 +488,7 @@ public class OrderService {
 
         double total = 0;
         for(Order order : orders.values()){
-            if(order.getCustomer().getId().equals(customerId)){
+            if(order.getCustomer().getId().equalsIgnoreCase(customerId)){
                 if(order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED){
                     total += order.getTotalAmount();
                 }
