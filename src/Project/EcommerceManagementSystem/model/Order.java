@@ -71,7 +71,7 @@ public class Order {
 
         for(OrderItem item1 : items){
 
-            if(item1.getProduct().getId().equals(item.getProduct().getId())){
+            if(item1.getProduct().getId().equalsIgnoreCase(item.getProduct().getId())){
                 if(item1.getProduct().getQuantity() < item1.getQuantity() + item.getQuantity()){
                     throw new IllegalArgumentException("Insufficient stock");
                 }

@@ -503,7 +503,7 @@ public class OrderService {
 
         for(Order order : orders.values()){
             if(order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED){
-                String customerId = order.getCustomer().getId();
+                String customerId = order.getCustomer().getId().toUpperCase(Locale.ROOT);
                 double total = order.getTotalAmount();
                 result.merge(customerId, total, (oldValue, newValue) -> oldValue + newValue);
             }
