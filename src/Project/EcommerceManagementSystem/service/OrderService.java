@@ -538,8 +538,7 @@ public class OrderService {
             return 0;
         }
 
-        double average = total / count;
-        return average;
+        return total / count;
     }
 
     public double getAverageOrderAmountByCustomer(String customerId){
@@ -551,7 +550,7 @@ public class OrderService {
         int count = 0;
 
         for(Order order : orders.values()){
-            if(order.getCustomer().getId().equals(customerId)){
+            if(order.getCustomer().getId().equalsIgnoreCase(customerId)){
                 if(order.getStatus() != OrderStatus.CANCELLED && order.getStatus() != OrderStatus.PENDING){
                     total += order.getTotalAmount();
                     count++;
@@ -600,7 +599,7 @@ public class OrderService {
         int count = 0;
 
         for (Order order : orders.values()){
-            if(order.getCustomer().getId().equals(customerId) && order.getStatus() == status){
+            if(order.getCustomer().getId().equalsIgnoreCase(customerId) && order.getStatus() == status){
                 total += order.getTotalAmount();
                 count++;
             }
@@ -625,7 +624,7 @@ public class OrderService {
         double sum = 0;
 
         for(Order order : orders.values()){
-            if(order.getCustomer().getId().equals(customerId) && order.getStatus() == status){
+            if(order.getCustomer().getId().equalsIgnoreCase(customerId) && order.getStatus() == status){
                 sum += order.getTotalAmount();
             }
         }
@@ -637,10 +636,10 @@ public class OrderService {
 
         for(Order order : orders.values()){
             OrderStatus status = order.getStatus();
-            Double total = order.getTotalAmount();
+            double total = order.getTotalAmount();
             result.merge(status, total, (oldValue, newValue) -> oldValue + newValue);
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<String, Double> getRevenueByCustomerAndStatus(OrderStatus status){
@@ -653,12 +652,12 @@ public class OrderService {
         for(Order order : orders.values()){
             if(order.getStatus() == status){
                 String customerId = order.getCustomer().getId();
-                Double total = order.getTotalAmount();
+                double total = order.getTotalAmount();
                 result.merge(customerId, total, (oldValue, newValue) -> oldValue + newValue);
             }
         }
 
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Integer> getOrderCountByStatus(){
@@ -666,19 +665,19 @@ public class OrderService {
 
         for (Order order : orders.values()){
             OrderStatus orderStatus = order.getStatus();
-            result.merge(orderStatus, 1, (oldValue, newValue) -> oldValue + newValue);
+            result.merge(orderStatus, 1, Integer::sum);
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<String, Integer> getOrderCountByCustomer(){
         Map<String, Integer> result = new HashMap<>();
 
         for(Order order : orders.values()){
-            String customerId = order.getCustomer().getId();
+            String customerId = order.getCustomer().getId().toUpperCase(Locale.ROOT);
             result.merge(customerId, 1, Integer::sum);
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public String getTopCustomerByOrderCount(){
@@ -703,7 +702,7 @@ public class OrderService {
 
         for(Order order : orders.values()){
             if(order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED){
-                String customerId = order.getCustomer().getId();
+                String customerId = order.getCustomer().getId().toUpperCase(Locale.ROOT);
                 Double total = order.getTotalAmount();
                 revenueByCustomer.merge(customerId, total, (oldValue, newValue) -> oldValue + newValue);
                 countByCustomer.merge(customerId, 1, Integer::sum);
@@ -741,7 +740,7 @@ public class OrderService {
 
         for(Order order : orders.values()){
             if(order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED){
-                String customerId = order.getCustomer().getId();
+                String customerId = order.getCustomer().getId().toUpperCase(Locale.ROOT);
                 double total = order.getTotalAmount();
                 revenueByCustomer.merge(customerId, total, (oldValue, newValue) -> oldValue + newValue);
                 countByCustomer.merge(customerId, 1, Integer::sum);
@@ -779,8 +778,8 @@ public class OrderService {
 
         for(Order order : orders.values()){
             if(order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED){
-                String customerId = order.getCustomer().getId();
-                Double total = order.getTotalAmount();
+                String customerId = order.getCustomer().getId().toUpperCase(Locale.ROOT);
+                double total = order.getTotalAmount();
                 totalRevenue.merge(customerId, total, (oldValue, newValue) -> oldValue + newValue);
             }
         }
@@ -808,8 +807,8 @@ public class OrderService {
 
         for(Order order : orders.values()){
             if(order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED){
-                String customerId = order.getCustomer().getId();
-                Double total = order.getTotalAmount();
+                String customerId = order.getCustomer().getId().toUpperCase(Locale.ROOT);
+                double total = order.getTotalAmount();
                 totalRevenue.merge(customerId, total, (oldValue, newValue) -> oldValue + newValue);
             }
         }
@@ -844,16 +843,31 @@ public class OrderService {
                 int numberOrders = entry.getValue();
                 customersByOrderCount.computeIfAbsent(numberOrders, k -> new ArrayList<>()).add(customerId);
             }
-        return customersByOrderCount;
+
+        Map<Integer, List<String>> immutableResult = new HashMap<>();
+
+        for(Map.Entry<Integer, List<String>> entry : customersByOrderCount.entrySet()){
+            immutableResult.put(
+                    entry.getKey(),
+                    Collections.unmodifiableList(entry.getValue())
+            );
+        }
+
+        return Collections.unmodifiableMap(immutableResult);
     }
 
     public Map<Integer, List<String>> getCustomersGroupedByOrderCountSorted(){
         Map<Integer, List<String>> customersByOrderCount = getCustomersGroupedByOrderCount();
 
-        for(List<String> customerIds : customersByOrderCount.values()){
-            Collections.sort(customerIds);
+        Map<Integer, List<String>> sortedResult = new HashMap<>();
+
+        for(Map.Entry<Integer, List<String>> entry : customersByOrderCount.entrySet()){
+            int order = entry.getKey();
+            List<String> copy = new ArrayList<>(entry.getValue());
+            Collections.sort(copy);
+            sortedResult.put(order, Collections.unmodifiableList(copy));
         }
-        return customersByOrderCount;
+        return Collections.unmodifiableMap(sortedResult);
     }
 
     public List<String> getCustomersWithMinOrders(int minOrders){
@@ -872,7 +886,7 @@ public class OrderService {
                 result.add(customerId);
             }
         }
-            return result;
+        return Collections.unmodifiableList(result);
     }
 
     public List<String> getCustomersWithOrdersBetween(int minOrders, int maxOrders){
@@ -899,7 +913,7 @@ public class OrderService {
                 result.add(customerId);
             }
         }
-        return result;
+        return Collections.unmodifiableList(result);
     }
 
     public String getTopCustomerByOrderCountBetween(int minOrders, int maxOrders) {
@@ -940,10 +954,10 @@ public class OrderService {
         List<Order> filteredOrders = getOrdersByStatus(status);
 
         for(Order order : filteredOrders){
-            String customerId = order.getCustomer().getId();
+            String customerId = order.getCustomer().getId().toUpperCase(Locale.ROOT);
             result.merge(customerId, 1, Integer::sum);
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Integer> getOrderCountByCustomerGroupedByStatus(String customerId){
@@ -958,7 +972,7 @@ public class OrderService {
             OrderStatus orderStatus = order.getStatus();
             result.merge(orderStatus, 1, Integer::sum);
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Double> getRevenueByCustomerGroupedByStatus(String customerId){
@@ -971,10 +985,10 @@ public class OrderService {
 
         for(Order order : orderList){
             OrderStatus orderStatus = order.getStatus();
-            Double total = order.getTotalAmount();
+            double total = order.getTotalAmount();
             result.merge(orderStatus, total, Double::sum);
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<String, Double> getAverageOrderAmountByCustomerAndStatus(OrderStatus status){
@@ -987,7 +1001,7 @@ public class OrderService {
         List<Order> orderList = getOrdersByStatus(status);
 
         for(Order order : orderList){
-            String customerId = order.getCustomer().getId();
+            String customerId = order.getCustomer().getId().toUpperCase(Locale.ROOT);
             double totalAmount = order.getTotalAmount();
             totalRevenue.merge(customerId, totalAmount, Double::sum);
             orderCount.merge(customerId, 1, Integer::sum);
@@ -1001,7 +1015,7 @@ public class OrderService {
             double average = total / numberOfOrders;
             averageByCustomer.put(customerId, average);
         }
-        return averageByCustomer;
+        return Collections.unmodifiableMap(averageByCustomer);
     }
 
     public String getTopCustomerByAverageOrderAmountAndStatus(OrderStatus status){
@@ -1034,7 +1048,7 @@ public class OrderService {
                 result.put(status, customer);
             }
         }
-            return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Double> getAverageOrderAmountByStatus(){
@@ -1047,7 +1061,7 @@ public class OrderService {
                 result.put(orderStatus, average);
             }
         }
-            return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Integer> getTopCustomerOrderCountByStatus(){
@@ -1071,7 +1085,7 @@ public class OrderService {
                 result.put(orderStatus, maxOrders);
             }
         }
-            return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Integer> getOrderCountByStatusGroupedByCustomer(String customerId){
@@ -1086,7 +1100,7 @@ public class OrderService {
             OrderStatus status = order.getStatus();
             result.merge(status, 1, Integer::sum);
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Double> getRevenueByStatusGroupedByCustomer(String customerId){
@@ -1103,7 +1117,7 @@ public class OrderService {
             result.merge(status, total, Double::sum);
         }
 
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Double> getAverageOrderAmountGroupedByCustomer(String customerId){
@@ -1123,7 +1137,7 @@ public class OrderService {
             double avarage = rev / count;
             result.put(status, avarage);
         }
-            return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Order> getMostExpensiveOrderGroupedByCustomer(String customerId){
@@ -1146,7 +1160,7 @@ public class OrderService {
                     result.put(status, order);
             }
         }
-            return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Double> getCheapestOrderAmountGroupedByCustomer(String customerId){
@@ -1169,7 +1183,7 @@ public class OrderService {
                 result.put(status, order.getTotalAmount());
             }
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Integer> getTotalItemsGroupedByCustomer(String customerId){
@@ -1188,7 +1202,7 @@ public class OrderService {
                 result.merge(status, quantity, Integer::sum);
             }
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Double> getTotalRevenueGroupedByCustomerAndStatus(String customerId){
@@ -1207,7 +1221,7 @@ public class OrderService {
                 result.merge(status, subtotal, Double::sum);
             }
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<OrderStatus, Double> getAverageItemsPerOrderGroupedByCustomer(String customerId){
@@ -1235,7 +1249,7 @@ public class OrderService {
             double average = total / orderCount;
             result.put(status, average);
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public String getTopCustomerByAverageItemsPerOrder(){
