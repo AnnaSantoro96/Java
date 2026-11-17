@@ -5,6 +5,7 @@ import Project.EcommerceManagementSystem.model.Customer;
 import Project.EcommerceManagementSystem.model.Order;
 import Project.EcommerceManagementSystem.model.OrderItem;
 
+import javax.print.DocFlavor;
 import java.awt.*;
 import java.nio.file.NoSuchFileException;
 import java.time.LocalDateTime;
@@ -35,7 +36,16 @@ public class OrderService {
         if(orderId == null || orderId.isBlank()){
             throw new IllegalArgumentException("Invalid order ID");
         }
-        return orders.remove(orderId);
+
+        Order order = findOrderById(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("Order not found");
+        }
+
+        if(order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.CANCELLED){
+            throw new IllegalStateException("Order cannot be removed in this status");
+        }
+            return orders.remove(orderId);
     }
 
     public Order findOrderById(String orderId){
@@ -308,7 +318,7 @@ public class OrderService {
                 result.add(order);
             }
         }
-        return result;
+        return Collections.unmodifiableList(result);
     }
 
     public int countOrdersByStatusAndCustomer(String customerId, OrderStatus status){
